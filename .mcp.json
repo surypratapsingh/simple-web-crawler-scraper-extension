@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "scrapeline": {
+      "command": "node",
+      "args": ["mcp-server/dist/server.mjs"]
+    }
+  }
+}

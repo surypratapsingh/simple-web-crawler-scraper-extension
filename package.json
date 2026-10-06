@@ -1,0 +1,31 @@
+{
+  "name": "scrapeline",
+  "private": true,
+  "description": "Browser extension + local MCP server that gives Claude and other AI agents cheap, read-only eyes on your real browser tabs: read, extract, crawl and export pages locally.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/surypratapsingh/simple-web-crawler-scraper-extension.git"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "type": "module",
+  "workspaces": [
+    "extension",
+    "mcp-server"
+  ],
+  "scripts": {
+    "build": "npm run build -w mcp-server && npm run build -w extension",
+    "typecheck": "tsc -p extension --noEmit && tsc -p mcp-server --noEmit",
+    "test": "vitest run",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "@types/node": "^22.0.0",
+    "jsdom": "^26.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}

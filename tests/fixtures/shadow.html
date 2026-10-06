@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head><title>Shadow Catalogue</title></head>
+<body>
+  <main>
+    <h1>Shadow catalogue</h1>
+    <p>The listing below is rendered by a web component with an open shadow root, so ordinary document selectors cannot see it.</p>
+    <product-list></product-list>
+  </main>
+  <script>
+    class ProductList extends HTMLElement {
+      connectedCallback() {
+        const root = this.attachShadow({ mode: 'open' });
+        const items = [['Lamp', '$20'], ['Desk', '$150'], ['Chair', '$85'], ['Shelf', '$40']];
+        root.innerHTML = '<ul class="products">' +
+          items.map(([n, p]) => '<li class="product"><span class="pname">' + n + '</span><span class="pprice">' + p + '</span></li>').join('') +
+          '</ul>';
+      }
+    }
+    customElements.define('product-list', ProductList);
+  </script>
+</body>
+</html>

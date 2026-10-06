@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <title>Acme Shop — Widgets</title>
+  <meta name="description" content="Fixture shop page for tests">
+  <style>.hidden-promo{display:none}</style>
+</head>
+<body>
+  <header>
+    <nav>
+      <ul><li><a href="/">Home</a></li><li><a href="/cart">Cart</a></li><li><a href="/help">Help</a></li></ul>
+    </nav>
+  </header>
+  <main>
+    <h1>Widgets</h1>
+    <p>Browse our catalogue of fine widgets. Free shipping over $50.</p>
+    <div class="hidden-promo">SECRET PROMO TEXT SHOULD NOT APPEAR</div>
+    <form action="/search" id="search"><input name="q" placeholder="Search"><button type="submit">Go</button></form>
+    <h2>Products</h2>
+    <div class="grid">
+      <div class="card"><a class="title" href="/p/1">Blue Widget</a><span class="price">$10.00</span><span class="stock">In stock</span><img src="/img/1.jpg" alt="Blue"></div>
+      <div class="card"><a class="title" href="/p/2">Red Widget</a><span class="price">$12.50</span><span class="stock">In stock</span><img src="/img/2.jpg" alt="Red"></div>
+      <div class="card"><a class="title" href="/p/3">Green Widget</a><span class="price">$9.99</span><span class="stock">Sold out</span><img src="/img/3.jpg" alt="Green"></div>
+      <div class="card"><a class="title" href="/p/4">Gold Widget</a><span class="price">$99.00</span><span class="stock">In stock</span><img src="/img/4.jpg" alt="Gold"></div>
+    </div>
+    <h2>Specs</h2>
+    <table id="specs">
+      <thead><tr><th>Model</th><th>Weight</th><th>Color</th></tr></thead>
+      <tbody>
+        <tr><td>W-100</td><td>1.2kg</td><td>Blue</td></tr>
+        <tr><td>W-200</td><td>1.4kg</td><td>Red</td></tr>
+        <tr><td>W-300</td><td>0.9kg</td><td>Green</td></tr>
+      </tbody>
+    </table>
+    <button id="more">Load more</button>
+  </main>
+  <footer><p>Copyright Acme. All rights reserved.</p></footer>
+</body>
+</html>

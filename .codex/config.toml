@@ -1,0 +1,3 @@
+[mcp_servers.scrapeline]
+command = "node"
+args = ["mcp-server/dist/server.mjs"]

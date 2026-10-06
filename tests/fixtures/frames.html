@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="en">
+<head><title>Frame Host</title></head>
+<body>
+  <main>
+    <h1>Frame host page</h1>
+    <p>This top-level page embeds a cross-origin widget in an iframe. The interesting inventory table lives inside the frame, not in this document at all.</p>
+    <iframe title="inventory" src="{{OTHER}}/frame-content.html" width="600" height="300"></iframe>
+    <iframe title="pixel" srcdoc="<p>tracking pixel</p>" width="1" height="1"></iframe>
+  </main>
+</body>
+</html>

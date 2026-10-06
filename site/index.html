@@ -1,0 +1,396 @@
+<title>Scrapeline</title>
+<meta name="description" content="A local MCP server and browser extension that give Claude — or any MCP client — eyes on the pages you already have open.">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+
+  :root{
+    --bg:#f5f7f6; --panel:#ffffff; --panel-2:#eef2f0; --line:#dbe3e0;
+    --ink:#12181a; --muted:#5c6863; --muted-2:#828e89;
+    --accent:#c98400; --accent-ink:#1a1300; --accent-soft:#fbe7bd;
+    --signal:#137f78; --signal-soft:#d9f0ee;
+    --mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+    --sans:'IBM Plex Sans',-apple-system,'Segoe UI',system-ui,sans-serif;
+    --radius:10px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0c1211; --panel:#131a19; --panel-2:#182120; --line:#233230;
+      --ink:#e8eeec; --muted:#93a19c; --muted-2:#647570;
+      --accent:#f2b53d; --accent-ink:#1a1300; --accent-soft:#3a2c0c;
+      --signal:#4fc6bd; --signal-soft:#0f2b29;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0c1211; --panel:#131a19; --panel-2:#182120; --line:#233230;
+    --ink:#e8eeec; --muted:#93a19c; --muted-2:#647570;
+    --accent:#f2b53d; --accent-ink:#1a1300; --accent-soft:#3a2c0c;
+    --signal:#4fc6bd; --signal-soft:#0f2b29;
+  }
+
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 var(--sans);-webkit-font-smoothing:antialiased;}
+  ::selection{background:var(--accent-soft);color:var(--ink);}
+  a{color:inherit;}
+  .wrap{max-width:1040px;margin:0 auto;padding-inline:20px;}
+  h1,h2,h3{font-family:var(--mono);font-weight:600;letter-spacing:-0.01em;margin:0;text-wrap:balance;}
+  code,.mono{font-family:var(--mono);}
+  section{padding-block:72px;}
+  @media (max-width:640px){ section{padding-block:48px;} }
+
+  /* ---------- nav ---------- */
+  nav.top{
+    position:sticky; top:env(safe-area-inset-top,0px); z-index:20;
+    background:color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter:blur(10px); border-bottom:1px solid var(--line);
+  }
+  nav.top .wrap{display:flex;align-items:center;justify-content:space-between;height:56px;}
+  .brand{display:flex;align-items:center;gap:9px;font-family:var(--mono);font-weight:700;font-size:15px;}
+  .brand .dot{width:9px;height:9px;border-radius:2px;background:var(--accent);transform:rotate(45deg);flex-shrink:0;}
+  nav.top ul{display:flex;gap:22px;list-style:none;margin:0;padding:0;font-family:var(--mono);font-size:13px;color:var(--muted);}
+  nav.top ul a{text-decoration:none;}
+  nav.top ul a:hover{color:var(--ink);}
+  @media (max-width:720px){ nav.top ul{display:none;} }
+  .pill{
+    display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:12px;
+    padding:4px 10px 4px 8px;border-radius:99px;background:var(--signal-soft);color:var(--signal);border:1px solid color-mix(in srgb, var(--signal) 35%, transparent);
+  }
+  .pill i{width:6px;height:6px;border-radius:50%;background:var(--signal);box-shadow:0 0 0 3px color-mix(in srgb, var(--signal) 22%, transparent);}
+
+  /* ---------- hero ---------- */
+  .hero{padding-block:64px 40px;}
+  .hero-grid{display:grid;grid-template-columns:1.05fr 1fr;gap:48px;align-items:center;}
+  @media (max-width:860px){ .hero-grid{grid-template-columns:1fr;} }
+  .eyebrow{font-family:var(--mono);font-size:12.5px;color:var(--signal);letter-spacing:.04em;display:flex;align-items:center;gap:8px;margin-bottom:14px;}
+  .eyebrow::before{content:'';width:16px;height:1px;background:var(--signal);}
+  .hero h1{font-size:clamp(34px,5vw,52px);line-height:1.06;}
+  .hero h1 .hl{background:linear-gradient(transparent 62%, var(--accent-soft) 62%);}
+  .hero p.lede{font-size:18px;color:var(--muted);max-width:46ch;margin:20px 0 28px;}
+  .cta-row{display:flex;gap:12px;flex-wrap:wrap;}
+  .btn{
+    font-family:var(--mono);font-size:13.5px;font-weight:600;text-decoration:none;
+    padding:11px 18px;border-radius:8px;border:1px solid transparent;display:inline-flex;align-items:center;gap:8px;cursor:pointer;
+  }
+  .btn.primary{background:var(--ink);color:var(--bg);}
+  .btn.primary:hover{opacity:.88;}
+  .btn.ghost{border-color:var(--line);color:var(--ink);background:var(--panel);}
+  .btn.ghost:hover{border-color:var(--muted-2);}
+  .meta-row{display:flex;gap:18px;margin-top:22px;font-family:var(--mono);font-size:12.5px;color:var(--muted-2);flex-wrap:wrap;}
+  .meta-row span{display:flex;align-items:center;gap:6px;}
+  .meta-row svg{width:13px;height:13px;flex-shrink:0;}
+
+  /* hero visual: browser chrome + scanning line */
+  .scan-card{
+    position:relative;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:0 1px 2px rgba(0,0,0,.04), 0 18px 40px -20px rgba(0,0,0,.25); overflow:hidden;
+  }
+  .scan-chrome{display:flex;align-items:center;gap:6px;padding:9px 12px;border-bottom:1px solid var(--line);background:var(--panel-2);}
+  .scan-chrome i{width:8px;height:8px;border-radius:50%;background:var(--line);}
+  .scan-url{font-family:var(--mono);font-size:11px;color:var(--muted-2);margin-left:6px;background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:3px 9px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .scan-body{position:relative;padding:18px 16px 20px;}
+  .scan-row{height:9px;border-radius:3px;background:var(--panel-2);margin-bottom:9px;}
+  .scan-row.w60{width:60%;} .scan-row.w85{width:85%;} .scan-row.w40{width:40%;} .scan-row.w70{width:70%;}
+  .scan-card-inner{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0;}
+  .scan-thumb{aspect-ratio:4/3;border-radius:6px;background:var(--panel-2);border:1px solid var(--line);}
+  .scanline{
+    position:absolute;left:0;right:0;height:34px;pointer-events:none;
+    background:linear-gradient(180deg, transparent, color-mix(in srgb, var(--signal) 14%, transparent) 40%, color-mix(in srgb, var(--signal) 22%, transparent) 50%, color-mix(in srgb, var(--signal) 14%, transparent) 60%, transparent);
+    border-top:1px solid color-mix(in srgb, var(--signal) 55%, transparent); border-bottom:1px solid color-mix(in srgb, var(--signal) 55%, transparent);
+    animation:sweep 4.5s ease-in-out infinite;
+  }
+  @keyframes sweep{ 0%,8%{top:8%;} 45%,55%{top:78%;} 92%,100%{top:8%;} }
+  .out-card{
+    position:absolute; right:-14px; bottom:-16px; width:64%; background:var(--ink); color:var(--bg);
+    border-radius:8px; padding:10px 12px; font-family:var(--mono); font-size:10.5px; line-height:1.55;
+    box-shadow:0 14px 30px -12px rgba(0,0,0,.4);
+  }
+  .out-card b{color:var(--accent);}
+  @media (prefers-reduced-motion:reduce){ .scanline{animation:none;top:40%;} }
+
+  /* ---------- architecture ---------- */
+  .flow{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:14px;align-items:center;margin-top:34px;}
+  @media (max-width:760px){ .flow{grid-template-columns:1fr; } .flow .arrow{transform:rotate(90deg); margin:0 auto;} }
+  .flow-node{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;text-align:center;}
+  .flow-node .k{font-family:var(--mono);font-size:11px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.05em;}
+  .flow-node .v{font-family:var(--mono);font-weight:600;margin-top:4px;font-size:15px;}
+  .flow-node.you{border-color:color-mix(in srgb, var(--signal) 45%, var(--line));}
+  .arrow{color:var(--muted-2);font-family:var(--mono);font-size:13px;text-align:center;}
+
+  /* ---------- section headers ---------- */
+  .sec-head{margin-bottom:30px;max-width:60ch;}
+  .sec-head .eyebrow{margin-bottom:10px;}
+  .sec-head h2{font-size:clamp(24px,3vw,30px);}
+  .sec-head p{color:var(--muted);margin:10px 0 0;}
+
+  /* ---------- tool grid ---------- */
+  .tool-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;}
+  @media (max-width:860px){ .tool-grid{grid-template-columns:repeat(2,1fr);} }
+  @media (max-width:560px){ .tool-grid{grid-template-columns:1fr;} }
+  .tool{background:var(--panel);padding:20px;}
+  .tool .cat{font-family:var(--mono);font-size:10.5px;color:var(--accent);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;}
+  .tool h3{font-size:14.5px;font-family:var(--mono);}
+  .tool code.name{display:block;font-size:12px;color:var(--muted-2);margin-top:3px;}
+  .tool p{font-size:13.5px;color:var(--muted);margin:9px 0 0;}
+
+  /* ---------- connect cards ---------- */
+  .connect-grid{display:grid;gap:12px;}
+  details.connect{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;}
+  details.connect summary{
+    list-style:none;cursor:pointer;padding:16px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  }
+  details.connect summary::-webkit-details-marker{display:none;}
+  .conn-name{display:flex;align-items:center;gap:12px;font-family:var(--mono);font-weight:600;font-size:14.5px;}
+  .conn-badge{width:28px;height:28px;border-radius:7px;background:var(--panel-2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;color:var(--muted);flex-shrink:0;}
+  .conn-note{font-size:12.5px;color:var(--muted-2);font-family:var(--mono);}
+  summary .chev{transition:transform .15s;color:var(--muted-2);}
+  details[open] summary .chev{transform:rotate(180deg);}
+  .conn-body{padding:0 18px 18px;border-top:1px solid var(--line);}
+  .conn-body p{font-size:13.5px;color:var(--muted);margin:14px 0 10px;}
+  .code-block{position:relative;background:var(--ink);color:var(--bg);border-radius:8px;padding:14px 16px;font-family:var(--mono);font-size:12.5px;line-height:1.65;overflow-x:auto;white-space:pre;}
+  .code-block .copy{
+    position:absolute;top:8px;right:8px;font-family:var(--mono);font-size:10.5px;color:var(--bg);
+    background:color-mix(in srgb, var(--bg) 16%, transparent);border:1px solid color-mix(in srgb, var(--bg) 30%, transparent);
+    border-radius:5px;padding:4px 8px;cursor:pointer;
+  }
+  .code-block .copy:hover{background:color-mix(in srgb, var(--bg) 26%, transparent);}
+  .code-block .str{color:#8fd6c9;} .code-block .key{color:#f2b53d;} .code-block .com{color:var(--muted-2);}
+
+  /* ---------- safety ---------- */
+  .safety-list{display:grid;grid-template-columns:1fr 1fr;gap:16px 28px;margin-top:8px;}
+  @media (max-width:700px){ .safety-list{grid-template-columns:1fr;} }
+  .safety-item{display:flex;gap:12px;}
+  .safety-item svg{width:18px;height:18px;flex-shrink:0;margin-top:2px;color:var(--signal);}
+  .safety-item h3{font-size:14px;margin-bottom:3px;}
+  .safety-item p{font-size:13.5px;color:var(--muted);margin:0;}
+
+  .not-list{margin-top:14px;font-size:13.5px;color:var(--muted);}
+  .not-list li{margin-bottom:6px;}
+
+  /* ---------- footer / get started ---------- */
+  .cta-band{background:var(--ink);color:var(--bg);border-radius:16px;padding:44px 36px;margin-top:8px;}
+  .cta-band h2{color:var(--bg);font-size:26px;}
+  .cta-band p{color:color-mix(in srgb, var(--bg) 68%, transparent);max-width:52ch;margin:10px 0 22px;}
+  .cta-band .code-block{background:color-mix(in srgb, var(--bg) 10%, transparent);border:1px solid color-mix(in srgb, var(--bg) 20%, transparent);}
+  .cta-band .copy{color:var(--ink);background:color-mix(in srgb, var(--bg) 85%, transparent);border-color:transparent;}
+
+  footer{padding:36px 0 max(28px,env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);margin-top:40px;}
+  footer .wrap{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
+  footer .f-brand{font-family:var(--mono);font-weight:700;font-size:13px;}
+  footer .f-note{font-family:var(--mono);font-size:12px;color:var(--muted-2);}
+</style>
+
+<nav class="top">
+  <div class="wrap">
+    <div class="brand"><span class="dot"></span>Scrapeline</div>
+    <ul>
+      <li><a href="#how">How it works</a></li>
+      <li><a href="#tools">Tools</a></li>
+      <li><a href="#connect">Connect</a></li>
+      <li><a href="#safety">Safety</a></li>
+      <li><a href="#start">Get started</a></li>
+    </ul>
+    <span class="pill"><i></i>local · no cloud</span>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <div class="eyebrow">MCP SERVER + BROWSER EXTENSION</div>
+      <h1>Give Claude <span class="hl">eyes</span> on the tabs you already have open.</h1>
+      <p class="lede">Scrapeline reads, extracts, and crawls the pages in your real, logged-in browser — through small, token-cheap MCP tools instead of screenshots. Everything runs on your machine. Nothing is uploaded anywhere.</p>
+      <div class="cta-row">
+        <a class="btn primary" href="#start">Install locally →</a>
+        <a class="btn ghost" href="#tools">See the tools</a>
+      </div>
+      <div class="meta-row">
+        <span><svg viewBox="0 0 16 16" fill="none"><path d="M2 8a6 6 0 1 1 12 0A6 6 0 0 1 2 8Z" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3l2 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>runs in Chrome, Edge &amp; Brave</span>
+        <span><svg viewBox="0 0 16 16" fill="none"><path d="M8 1.5 3 4v4c0 3.5 2.2 5.9 5 6.5 2.8-.6 5-3 5-6.5V4L8 1.5Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>local-first, no account</span>
+        <span><svg viewBox="0 0 16 16" fill="none"><path d="M1.5 8h5l1.5-3 2 6 1.5-3h3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>open protocol — MCP</span>
+      </div>
+    </div>
+    <div class="scan-card">
+      <div class="scan-chrome"><i></i><i></i><i></i><span class="scan-url">shop.example.com/catalog</span></div>
+      <div class="scan-body">
+        <div class="scan-row w60" style="height:14px;margin-bottom:12px;"></div>
+        <div class="scan-card-inner">
+          <div class="scan-thumb"></div><div class="scan-thumb"></div>
+        </div>
+        <div class="scan-row w85"></div>
+        <div class="scan-row w70"></div>
+        <div class="scan-row w40"></div>
+        <div class="scanline"></div>
+      </div>
+      <div class="out-card">page_extract →<br>25 rows × 4 cols<br><b>saved</b> catalog.csv (2.1KB)</div>
+    </div>
+  </div>
+</header>
+
+<section id="how">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">HOW IT WORKS</div>
+      <h2>One bridge, your machine, three hops.</h2>
+      <p>Claude never touches your browser directly. Every call goes through a local WebSocket bridge that only your own extension can speak to — a web page can't reach it, and neither can anything outside your computer.</p>
+    </div>
+    <div class="flow">
+      <div class="flow-node you"><div class="k">MCP client</div><div class="v">Claude</div></div>
+      <div class="arrow">stdio →</div>
+      <div class="flow-node"><div class="k">local process</div><div class="v">MCP server</div></div>
+      <div class="arrow">ws://127.0.0.1 →</div>
+      <div class="flow-node"><div class="k">your browser</div><div class="v">Extension → Tab</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="tools">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">CAPABILITIES</div>
+      <h2>Escalate cheaply, extract precisely.</h2>
+      <p>Claude starts with the cheapest tool that answers the question — a tab list costs a few tokens, a full crawl only runs when the job calls for it.</p>
+    </div>
+    <div class="tool-grid">
+      <div class="tool"><div class="cat">Look</div><h3>Outline &amp; read</h3><code class="name">page_outline · page_text · page_query</code><p>Structure, readable text, or a targeted selector read — each with its own token budget.</p></div>
+      <div class="tool"><div class="cat">Extract</div><h3>One page</h3><code class="name">page_extract</code><p>Auto-detects the main table or repeating list, or use your own selectors. Big tables save straight to a file.</p></div>
+      <div class="tool"><div class="cat">Crawl</div><h3>A whole listing</h3><code class="name">crawl_start</code><p>Follows Next links, a URL template, or infinite scroll. Survives the browser restarting mid-crawl.</p></div>
+      <div class="tool"><div class="cat">Bulk</div><h3>A list of URLs</h3><code class="name">extract_urls</code><p>One row per page from an explicit list — product pages, profiles, listings — no pagination needed.</p></div>
+      <div class="tool"><div class="cat">Discover</div><h3>Contacts &amp; images</h3><code class="name">find_contacts · find_images</code><p>Emails, phones, social links, and images — on one page or across many, following internal links if asked.</p></div>
+      <div class="tool"><div class="cat">Map</div><h3>Sitemap &amp; Shopify</h3><code class="name">sitemap_explore · shopify_catalog</code><p>Public, unauthenticated, instant — no tab needed. Reads a site's own sitemap.xml or product catalogue directly.</p></div>
+      <div class="tool"><div class="cat">Repeat</div><h3>Save a setup</h3><code class="name">recipe_save · recipe_run</code><p>Name any call above and replay it later, or hand the recipe file to a colleague running the same server.</p></div>
+      <div class="tool"><div class="cat">Act</div><h3>Scroll &amp; open</h3><code class="name">page_scroll · open_url</code><p>Trigger lazy-loading, or open a URL in a background tab without stealing your focus.</p></div>
+      <div class="tool"><div class="cat">Orient</div><h3>What's open</h3><code class="name">list_tabs · page_info · browser_status</code><p>The cheapest possible look: which tabs are open, and whether the bridge is even connected.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="connect">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">MCP — AN OPEN PROTOCOL</div>
+      <h2>Not just Claude.</h2>
+      <p>Scrapeline speaks the Model Context Protocol, so anything that speaks MCP back can use it — the same local server, no extra work on its side.</p>
+    </div>
+    <div class="connect-grid">
+
+      <details class="connect" open>
+        <summary>
+          <span class="conn-name"><span class="conn-badge">CC</span>Claude Code</span>
+          <span class="conn-note">CLI · already configured</span>
+          <svg class="chev" viewBox="0 0 16 16" width="14" fill="none"><path d="m4 6 4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </summary>
+        <div class="conn-body">
+          <p>The repo ships a project-scoped <code>.mcp.json</code> — just run Claude Code from the project folder and approve it. From anywhere else:</p>
+          <div class="code-block"><button class="copy" data-copy="claude mcp add scrapeline -- node /path/to/simple-web-crawler-scraper-extension/mcp-server/dist/server.mjs">Copy</button>claude mcp add scrapeline -- node /path/to/simple-web-crawler-scraper-extension/mcp-server/dist/server.mjs</div>
+        </div>
+      </details>
+
+      <details class="connect">
+        <summary>
+          <span class="conn-name"><span class="conn-badge">CD</span>Claude Desktop</span>
+          <span class="conn-note">config file · one-time</span>
+          <svg class="chev" viewBox="0 0 16 16" width="14" fill="none"><path d="m4 6 4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </summary>
+        <div class="conn-body">
+          <p>Add a block to <code>claude_desktop_config.json</code>:</p>
+          <div class="code-block"><button class="copy" data-copy='{ "mcpServers": { "scrapeline": { "command": "node", "args": ["/path/to/simple-web-crawler-scraper-extension/mcp-server/dist/server.mjs"] } } }'>Copy</button>{ <span class="key">"mcpServers"</span>: { <span class="key">"scrapeline"</span>: {
+    <span class="key">"command"</span>: <span class="str">"node"</span>,
+    <span class="key">"args"</span>: [<span class="str">"/path/to/simple-web-crawler-scraper-extension/mcp-server/dist/server.mjs"</span>]
+  } } }</div>
+        </div>
+      </details>
+
+      <details class="connect">
+        <summary>
+          <span class="conn-name"><span class="conn-badge">*</span>Cursor, Windsurf &amp; other MCP editors</span>
+          <span class="conn-note">same stdio server</span>
+          <svg class="chev" viewBox="0 0 16 16" width="14" fill="none"><path d="m4 6 4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </summary>
+        <div class="conn-body">
+          <p>Any editor or agent that supports local MCP servers takes the same shape — point its MCP config at the built server with <code>node</code> as the command:</p>
+          <div class="code-block"><button class="copy" data-copy='{ "command": "node", "args": ["/path/to/simple-web-crawler-scraper-extension/mcp-server/dist/server.mjs"] }'>Copy</button>{ <span class="key">"command"</span>: <span class="str">"node"</span>, <span class="key">"args"</span>: [<span class="str">"/path/to/simple-web-crawler-scraper-extension/mcp-server/dist/server.mjs"</span>] }</div>
+          <p style="margin-top:14px">One extension, one browser session, several MCP clients: the first process to start becomes the hub and the rest relay through it automatically — run Scrapeline from two tools at once without a conflict.</p>
+        </div>
+      </details>
+
+      <details class="connect">
+        <summary>
+          <span class="conn-name"><span class="conn-badge">☁</span>claude.ai (browser)</span>
+          <span class="conn-note">needs a tunnel — read this first</span>
+          <svg class="chev" viewBox="0 0 16 16" width="14" fill="none"><path d="m4 6 4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </summary>
+        <div class="conn-body">
+          <p>claude.ai runs entirely in the cloud, so it has no path to a process on your machine — a local <code>stdio</code> server is invisible to it by construction, not by missing config. Reaching it from there means putting a public URL in front of the local server (ngrok, Cloudflare Tunnel) with real authentication first, since Scrapeline currently trusts whatever calls it and reads your live, logged-in tabs. For most people, Claude Code or Claude Desktop gets the same capability with none of that exposure.</p>
+        </div>
+      </details>
+
+    </div>
+  </div>
+</section>
+
+<section id="safety">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">SAFETY MODEL</div>
+      <h2>Local by construction, not by promise.</h2>
+    </div>
+    <div class="safety-list">
+      <div class="safety-item">
+        <svg viewBox="0 0 16 16" fill="none"><path d="M2 8a6 6 0 1 1 12 0A6 6 0 0 1 2 8Z" stroke="currentColor" stroke-width="1.3"/><path d="M5.5 8.3l1.7 1.7 3.3-3.6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div><h3>127.0.0.1 only</h3><p>The bridge refuses any connection that isn't from your own extension's origin — a web page cannot reach it, and neither can anything off-machine.</p></div>
+      </div>
+      <div class="safety-item">
+        <svg viewBox="0 0 16 16" fill="none"><rect x="3" y="7" width="10" height="6.5" rx="1.3" stroke="currentColor" stroke-width="1.3"/><path d="M5.3 7V5a2.7 2.7 0 0 1 5.4 0v2" stroke="currentColor" stroke-width="1.3"/></svg>
+        <div><h3>Kill switch, always visible</h3><p>One toggle in the popup turns Claude's access off entirely — no restart needed, and it holds until you turn it back on.</p></div>
+      </div>
+      <div class="safety-item">
+        <svg viewBox="0 0 16 16" fill="none"><path d="M2 3.5h12M2 8h12M2 12.5h7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        <div><h3>Content-free audit log</h3><p>Every call is logged — method and host only. What was actually read is never written to disk.</p></div>
+      </div>
+      <div class="safety-item">
+        <svg viewBox="0 0 16 16" fill="none"><path d="M8 2 2 4.5v3.7C2 12 4.6 14 8 14.5c3.4-.5 6-2.5 6-6.3V4.5L8 2Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
+        <div><h3>Page text is untrusted data</h3><p>Everything read from a page is labelled untrusted before it reaches Claude — instructions hidden in a page are never treated as commands.</p></div>
+      </div>
+      <div class="safety-item">
+        <svg viewBox="0 0 16 16" fill="none"><path d="M8 5v4M8 11h.01" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M2 8a6 6 0 1 1 12 0A6 6 0 0 1 2 8Z" stroke="currentColor" stroke-width="1.3"/></svg>
+        <div><h3>No general clicking</h3><p>The only clicks anywhere are the crawler's own pagination controls — restricted to things that look like "Next," and refused outright on anything labelled destructive.</p></div>
+      </div>
+      <div class="safety-item">
+        <svg viewBox="0 0 16 16" fill="none"><path d="M3 6h10l-1 7H4L3 6Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M6.5 6V4a1.5 1.5 0 0 1 3 0v2" stroke="currentColor" stroke-width="1.3"/></svg>
+        <div><h3>Polite by default</h3><p>Crawls wait between pages, check robots.txt, and cap themselves on pages, rows, and time — every job, not just the ones you remember to configure.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="start">
+  <div class="wrap">
+    <div class="cta-band">
+      <h2>Two minutes to a connected browser.</h2>
+      <p>No account, no cloud step, no billing page. Clone it, build it, load it.</p>
+      <div class="code-block" style="margin-bottom:14px;"><button class="copy" data-copy="git clone https://github.com/surypratapsingh/simple-web-crawler-scraper-extension.git &amp;&amp; cd simple-web-crawler-scraper-extension
+npm install &amp;&amp; npm run build">Copy</button>git clone https://github.com/surypratapsingh/simple-web-crawler-scraper-extension.git &amp;&amp; cd simple-web-crawler-scraper-extension
+npm install &amp;&amp; npm run build</div>
+      <p style="margin:0;font-size:13px;">Then load <code style="color:var(--bg)">extension/.output/chrome-mv3</code> as an unpacked extension, and point Claude Code, Claude Desktop, or another MCP client at <code style="color:var(--bg)">mcp-server/dist/server.mjs</code>. Full walkthrough in the project's README.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span class="f-brand">Scrapeline</span>
+    <span class="f-note">local-first · MIT-style hack project · not affiliated with Anthropic</span>
+  </div>
+</footer>
+
+<script>
+  document.querySelectorAll('.copy').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var text = btn.getAttribute('data-copy') || '';
+      var done = function(){ var orig = btn.textContent; btn.textContent = 'Copied'; setTimeout(function(){ btn.textContent = orig; }, 1200); };
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(text).then(done, done); }
+        else { done(); }
+      } catch(e) { done(); }
+    });
+  });
+</script>

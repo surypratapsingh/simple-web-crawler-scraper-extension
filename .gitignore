@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.output/
+.wxt/
+test-results/
+playwright-report/
+*.log
+.browsers/
+.env
+.env.*
+*.bak

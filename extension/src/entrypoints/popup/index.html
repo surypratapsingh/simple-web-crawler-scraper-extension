@@ -1,0 +1,171 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Scrapeline</title>
+    <style>
+      :root {
+        --bg: #ffffff;
+        --panel: #f6f7f9;
+        --border: #e3e5e9;
+        --text: #16181d;
+        --muted: #676c76;
+        --accent: #4f46e5;
+        --accent-text: #ffffff;
+        --ok: #1a9e5c;
+        --bad: #d6394a;
+        --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+        --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #17181c;
+          --panel: #1e2025;
+          --border: #2c2f36;
+          --text: #eceef1;
+          --muted: #93989f;
+          --accent: #818cf8;
+          --accent-text: #14141c;
+          --ok: #34d17a;
+          --bad: #ff6b7a;
+        }
+      }
+      * { box-sizing: border-box; }
+      body {
+        font: 13px/1.45 var(--sans);
+        width: 320px;
+        margin: 0;
+        padding: 14px;
+        background: var(--bg);
+        color: var(--text);
+      }
+      header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+      h1 { font-size: 14px; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
+      h1 span { font-weight: 400; color: var(--muted); }
+
+      .status {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        padding: 8px 10px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        margin-bottom: 10px;
+      }
+      .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--bad); flex-shrink: 0; transition: background 0.2s; }
+      .dot.on { background: var(--ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 20%, transparent); }
+      #status { font-weight: 500; }
+      #status small { display: block; font-weight: 400; color: var(--muted); margin-top: 1px; }
+
+      .switch-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 9px 10px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        margin-bottom: 12px;
+      }
+      .switch-row label { font-weight: 600; cursor: pointer; }
+      .switch-row small { display: block; color: var(--muted); font-weight: 400; margin-top: 1px; }
+      .switch { position: relative; width: 34px; height: 20px; flex-shrink: 0; }
+      .switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+      .switch .track {
+        position: absolute; inset: 0; background: var(--border); border-radius: 20px; cursor: pointer; transition: background 0.15s;
+      }
+      .switch .track::before {
+        content: ''; position: absolute; width: 16px; height: 16px; left: 2px; top: 2px;
+        background: #fff; border-radius: 50%; transition: transform 0.15s; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+      }
+      .switch input:checked + .track { background: var(--accent); }
+      .switch input:checked + .track::before { transform: translateX(14px); }
+
+      details { border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; overflow: hidden; }
+      summary {
+        padding: 8px 10px; cursor: pointer; font-weight: 600; color: var(--muted); font-size: 12px;
+        list-style: none; display: flex; align-items: center; justify-content: space-between;
+      }
+      summary::-webkit-details-marker { display: none; }
+      summary::after { content: '▾'; transition: transform 0.15s; font-size: 10px; }
+      details[open] summary::after { transform: rotate(-180deg); }
+      details[open] summary { border-bottom: 1px solid var(--border); }
+      .details-body { padding: 10px; }
+
+      label.field { display: block; font-weight: 600; font-size: 11.5px; color: var(--muted); margin: 8px 0 3px; }
+      label.field:first-child { margin-top: 0; }
+      input[type='text'], input[type='password'], input[type='number'], textarea {
+        width: 100%; font: 12.5px var(--sans); padding: 6px 8px; border: 1px solid var(--border);
+        border-radius: 6px; background: var(--bg); color: var(--text);
+      }
+      input:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
+      textarea { height: 44px; resize: vertical; font-family: var(--mono); }
+
+      button#save {
+        width: 100%; margin-top: 10px; padding: 7px 0; border: none; border-radius: 6px;
+        background: var(--accent); color: var(--accent-text); font-weight: 600; font-size: 12.5px; cursor: pointer;
+      }
+      button#save:active { opacity: 0.85; }
+      .saved-flash { color: var(--ok); font-size: 11px; font-weight: 600; margin-left: 8px; opacity: 0; transition: opacity 0.2s; }
+      .saved-flash.show { opacity: 1; }
+
+      h2 { font-size: 11.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; margin: 12px 0 6px; }
+      ul#audit {
+        list-style: none; margin: 0; padding: 0; max-height: 130px; overflow-y: auto;
+        font: 11px var(--mono); border: 1px solid var(--border); border-radius: 8px;
+      }
+      ul#audit li { padding: 5px 8px; border-bottom: 1px solid var(--border); display: flex; gap: 6px; }
+      ul#audit li:last-child { border-bottom: none; }
+      ul#audit li.bad { color: var(--bad); }
+      ul#audit li .t { color: var(--muted); flex-shrink: 0; }
+      ul#audit li.empty { color: var(--muted); font-family: var(--sans); justify-content: center; padding: 12px 0; }
+
+      footer { margin-top: 12px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Scrapeline <span>· eyes for Claude</span></h1>
+    </header>
+
+    <div class="status">
+      <span id="dot" class="dot"></span>
+      <span id="status">connecting…</span>
+    </div>
+
+    <div class="switch-row">
+      <label for="enabled">
+        Claude access
+        <small>Kill switch — turn off to block every tool call</small>
+      </label>
+      <span class="switch">
+        <input id="enabled" type="checkbox" />
+        <span class="track"></span>
+      </span>
+    </div>
+
+    <details>
+      <summary>Connection &amp; privacy settings</summary>
+      <div class="details-body">
+        <label class="field" for="port">Bridge port</label>
+        <input id="port" type="number" min="1024" max="65535" />
+
+        <label class="field" for="token">Shared token (optional)</label>
+        <input id="token" type="password" autocomplete="off" placeholder="leave blank for none" />
+
+        <label class="field" for="blocklist">Block list — one host per line</label>
+        <textarea id="blocklist" placeholder="mybank.com"></textarea>
+
+        <button id="save">Save<span id="saved" class="saved-flash">Saved</span></button>
+      </div>
+    </details>
+
+    <h2>Recent activity</h2>
+    <ul id="audit"><li class="empty">(none yet)</li></ul>
+
+    <footer>Only page structure/text you allow is returned. Nothing leaves this machine except to your local MCP server.</footer>
+
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
