@@ -1,5 +1,7 @@
 # Scrapeline — a web scraper built for Claude, not for clicking
 
+**Project site:** https://scrapeline-seven.vercel.app/
+
 Scrapeline is a browser extension plus a local MCP server. Together they let **Claude** (Claude
 Code, Claude Desktop, or any other MCP client) read and scrape the pages **you already have open**
 — logged-in sessions included — and crawl, extract, and export data on request, entirely on your
