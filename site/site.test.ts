@@ -9,3 +9,16 @@ describe('site/', () => {
     expect(read('./.gitignore').split(/\r?\n/)).toContain('.env*');
   });
 });
+
+// FIX de2c9e3: the landing page must keep its doctype, lang, charset and viewport meta.
+describe('site/index.html', () => {
+  const html = read('./index.html');
+  it('keeps the viewport meta so phones scale the page', () => {
+    expect(html).toMatch(/<meta name="viewport" content="width=device-width, initial-scale=1">/);
+  });
+  it('keeps doctype, lang and charset', () => {
+    expect(html).toMatch(/^<!doctype html>/i);
+    expect(html).toMatch(/<html lang="en">/);
+    expect(html).toMatch(/<meta charset="utf-8">/);
+  });
+});
