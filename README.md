@@ -25,6 +25,8 @@ Claude ──stdio──▶ MCP server ──ws://127.0.0.1:8765──▶ extens
 
 Requires Node 20+ (developed on Node 24).
 
+![CI](https://github.com/surypratapsingh/simple-web-crawler-scraper-extension/actions/workflows/ci.yml/badge.svg)
+
 ```bash
 git clone https://github.com/surypratapsingh/simple-web-crawler-scraper-extension.git
 cd simple-web-crawler-scraper-extension

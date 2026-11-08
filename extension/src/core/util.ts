@@ -52,12 +52,18 @@ export function isHidden(el: Element): boolean {
 export type Scope = Document | Element | ShadowRoot;
 
 /** Every element under root, descending into open shadow roots. */
+function isElementWithShadow(x: Scope): x is Element {
+  return (x as Element).shadowRoot !== undefined;
+}
+
+/** Every element under root, descending into open shadow roots. */
 export function allElements(root: Scope): Element[] {
   const out: Element[] = [];
   for (const el of Array.from(root.querySelectorAll('*'))) {
     out.push(el);
     if (el.shadowRoot) out.push(...allElements(el.shadowRoot));
   }
+  if (isElementWithShadow(root)) { const sr = root.shadowRoot; if (sr) out.push(...allElements(sr)); }
   return out;
 }
 
@@ -67,6 +73,7 @@ export function deepQueryAll(root: Scope, selector: string): Element[] {
   for (const el of Array.from(root.querySelectorAll('*'))) {
     if (el.shadowRoot) out.push(...deepQueryAll(el.shadowRoot, selector));
   }
+  if (isElementWithShadow(root)) { const sr = root.shadowRoot; if (sr) out.push(...deepQueryAll(sr, selector)); }
   return out;
 }
 
