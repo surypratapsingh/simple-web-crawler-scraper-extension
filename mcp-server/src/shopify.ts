@@ -78,7 +78,14 @@ export async function readShopifyCatalog(
   let truncated = false;
 
   for (; page <= maxPages; page++) {
-    const r = await fetcher(`${base.origin}/products.json?limit=250&page=${page}`);
+    let r;
+    try {
+      r = await fetcher(`${base.origin}/products.json?limit=250&page=${page}`);
+    } catch (err) {
+      // A network error (offline, DNS, CORS) must not escape raw: same rule as HTTP errors.
+      if (page === 1) throw new Error(`not a reachable Shopify catalogue (${err instanceof Error ? err.message : String(err)})`);
+      break;
+    }
     if (!r.ok) {
       if (page === 1) throw new Error(`not a reachable Shopify catalogue (products.json returned HTTP ${r.status})`);
       break;

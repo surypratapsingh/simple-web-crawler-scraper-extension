@@ -75,3 +75,29 @@ describe('readShopifyCatalog', () => {
     expect(r.products).toBe(250);
   });
 });
+
+describe('readShopifyCatalog: empty input and network failures (R9 item 14)', () => {
+  it('an empty catalogue gives no rows and no error', async () => {
+    const fetcher: Fetcher = async () => jsonRes({ products: [] });
+    const r = await readShopifyCatalog('https://shop.example', { fetcher });
+    expect(r.products).toBe(0);
+    expect(r.rows).toEqual([]);
+    expect(r.truncated).toBe(false);
+  });
+
+  it('a network error on the first page gives the clear message, not a raw error', async () => {
+    const fetcher: Fetcher = async () => { throw new TypeError('fetch failed'); };
+    await expect(readShopifyCatalog('https://shop.example', { fetcher })).rejects.toThrow('not a reachable Shopify catalogue');
+  });
+
+  it('a network error on a later page keeps the rows already read', async () => {
+    const full = Array.from({ length: 250 }, (_, i) => product(i));
+    const fetcher: Fetcher = async (url) => {
+      if (url.includes('page=1')) return jsonRes({ products: full });
+      throw new TypeError('fetch failed');
+    };
+    const r = await readShopifyCatalog('https://shop.example', { fetcher });
+    expect(r.products).toBe(250);
+    expect(r.rows.length).toBe(250);
+  });
+});
