@@ -16,8 +16,12 @@ const DENY = /\b(delete|remove|buy|pay|purchase|checkout|check out|place order|o
 const PAGER = 'nav[aria-label*="pag" i], [class*="pagination" i], [class*="pager" i], [role="navigation"]';
 
 export function labelOf(el: Element): string {
-  return clean(
-    el.getAttribute('aria-label') || (el as HTMLInputElement).value || el.textContent || el.getAttribute('title') || '',
+  // Clean each source first: whitespace-only text must not hide the title (isDenied reads this).
+  return (
+    clean(el.getAttribute('aria-label')) ||
+    clean((el as HTMLInputElement).value) ||
+    clean(el.textContent) ||
+    clean(el.getAttribute('title'))
   );
 }
 

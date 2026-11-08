@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from 'vitest';
 import { detect } from './autodetect';
-import { clickRef, contentSig, findNext, isDenied, waitChange, waitStable } from './pagination';
+import { clickRef, contentSig, findNext, isDenied, labelOf, waitChange, waitStable } from './pagination';
 
 const set = (html: string) => {
   document.body.innerHTML = html;
@@ -123,5 +123,16 @@ describe('detect prefer', () => {
     const other = auto.candidates.find((c) => c.rowSelector !== auto.best!.rowSelector)!;
     expect(detect(document, { prefer: other.rowSelector }).best?.rowSelector).toBe(other.rowSelector);
     expect(detect(document, { prefer: 'ul.nope > li' }).best).toBeNull();
+  });
+});
+
+describe('labelOf', () => {
+  it('skips blank text so a title still reaches isDenied', () => {
+    set('<button title="Delete account">\n   </button><button aria-label="Next page">›</button><input value="Go">');
+    const [del, next, input] = Array.from(document.querySelectorAll('button, input'));
+    expect(labelOf(del)).toBe('Delete account');
+    expect(isDenied(del)).toBe(true);
+    expect(labelOf(next)).toBe('Next page');
+    expect(labelOf(input)).toBe('Go');
   });
 });
