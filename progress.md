@@ -3,6 +3,11 @@ Newest entry first. Each entry: Done / In progress / Next / Blockers.
 
 > `PLAN.md` is this project's plan file. On Windows, `plan.md` and `PLAN.md` are the same file. Its §11 has the detailed build history.
 
+## 2026-11-10 - c12/integrate: merged fb-ci/r8-webscraper_ex
+- Done: merged 7df65de (pageLimit() extracted, depth and same-origin tests) and 843ff65 (e2e job in CI) into one branch; no pull request existed for this repo.
+- Tested: npm run typecheck, npm test 155/155 (14 files), npm run build pass. Planted faults caught: pageLimit default 5 -> 50, Math.min -> Math.max. e2e (Playwright, about 8 minutes, one known flaky crawl.spec.ts:19) not run here.
+- Next: owner pushes c12/integrate and opens one PR; first CI run of the new e2e job decides if crawl.spec.ts:19 needs a longer timeout.
+
 ## 2026-10-06 - Published to GitHub
 - Done: added MIT LICENSE, package.json metadata (description, license, repository, engines), .gitignore entries for .env and *.bak. README and site now use the real clone URL, and the private artifact link is replaced with `site/index.html`. Typecheck, 112 unit tests and build pass. `git init`, first commit, pushed to the public repo https://github.com/surypratapsingh/simple-web-crawler-scraper-extension.
 - Next: CI workflow (typecheck + unit) if wanted. The user still has to reload the Edge extension (bulk tools show `unknown method batch_*`) and add `mcpServers` to the Claude desktop config while the app is closed.
