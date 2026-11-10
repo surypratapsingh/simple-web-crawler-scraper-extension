@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { alignRows, buildUrl, jitter, parseRobots, robotsAllows, rowKey } from './crawl-util';
+import { alignRows, buildUrl, hostRelated, jitter, pageLimit, parseRobots, robotsAllows, rowKey } from './crawl-util';
 
 describe('crawl-util', () => {
   it('rowKey distinguishes rows that would collide when naively joined', () => {
@@ -62,5 +62,38 @@ Disallow: /
   it('an empty or missing file allows everything; empty Disallow allows all', () => {
     expect(robotsAllows(parseRobots(''), '/x')).toBe(true);
     expect(robotsAllows(parseRobots('User-agent: *\nDisallow:'), '/x')).toBe(true);
+  });
+});
+
+describe('crawl depth limit', () => {
+  it('defaults to 5 pages and never goes past the hard cap', () => {
+    expect(pageLimit()).toBe(5);
+    expect(pageLimit(20)).toBe(20);
+    expect(pageLimit(100)).toBe(100);
+    expect(pageLimit(1)).toBe(1);
+    expect(pageLimit(0)).toBe(0);
+  });
+
+  it('clamps a request deeper than the cap, including a custom cap', () => {
+    expect(pageLimit(101)).toBe(100);
+    expect(pageLimit(5000)).toBe(100);
+    expect(pageLimit(50, 10)).toBe(10);
+  });
+});
+
+describe('same-origin limit', () => {
+  it('accepts the same host and its subdomains in either direction', () => {
+    expect(hostRelated('example.com', 'example.com')).toBe(true);
+    expect(hostRelated('www.example.com', 'example.com')).toBe(true);
+    expect(hostRelated('example.com', 'shop.example.com')).toBe(true);
+    expect(hostRelated('EXAMPLE.com', 'Example.COM')).toBe(true);
+  });
+
+  it('rejects other hosts and names that only share a fragment', () => {
+    expect(hostRelated('evil.com', 'example.com')).toBe(false);
+    expect(hostRelated('evil-example.com', 'example.com')).toBe(false);
+    expect(hostRelated('notexample.com', 'example.com')).toBe(false);
+    expect(hostRelated('example.com.evil.net', 'example.com')).toBe(false);
+    expect(hostRelated('example.org', 'example.com')).toBe(false);
   });
 });
