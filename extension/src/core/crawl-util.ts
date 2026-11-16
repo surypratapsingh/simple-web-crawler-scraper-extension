@@ -34,6 +34,14 @@ export function buildUrl(template: string, n: number): string {
 }
 
 /** Delay with up to +50% jitter so requests are not perfectly periodic. */
+/**
+ * How many pages deep a crawl may go: the requested maxPages, default 5, never above the hard cap.
+ * Pagination depth is the crawler's only depth; it never follows links recursively.
+ */
+export function pageLimit(maxPages?: number, hard = 100): number {
+  return Math.min(maxPages ?? 5, hard);
+}
+
 export function jitter(ms: number, rnd: () => number = Math.random): number {
   return Math.round(ms * (1 + rnd() * 0.5));
 }

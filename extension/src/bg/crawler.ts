@@ -6,6 +6,7 @@ import {
   DETAIL_AUTO_COLUMNS,
   hostRelated,
   jitter,
+  pageLimit,
   parseRobots,
   resolveLinkIndex,
   robotsAllows,
@@ -383,7 +384,7 @@ export function createCrawler(deps: CrawlDeps) {
 
   async function loop(meta: JobMeta, ctl: { cancelled: boolean }, resumed: boolean) {
     const p = meta.params;
-    const maxPages = Math.min(p.maxPages ?? 5, LIMITS.maxPages);
+    const maxPages = pageLimit(p.maxPages, LIMITS.maxPages);
     const maxRows = Math.min(p.maxRows ?? 500, LIMITS.maxRows);
     const maxMs = Math.min(p.maxSeconds ?? 300, LIMITS.maxSeconds) * 1000;
     const delay = Math.max(p.delayMs ?? 1500, LIMITS.minDelay);
