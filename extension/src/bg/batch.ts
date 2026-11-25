@@ -234,7 +234,7 @@ export function createBatch(deps: CrawlDeps) {
         } catch (e) {
           ok = false;
           if (!meta.columns.length) meta.columns = columnsFor(p);
-          await appendRow(meta, [url, ...Array(Math.max(0, meta.columns.length - 1)).fill(''), (e as Error).message ?? 'error'].slice(0, meta.columns.length));
+          await appendRow(meta, [url, ...Array(Math.max(0, meta.columns.length - 2)).fill(''), (e as Error).message ?? 'error'].slice(0, meta.columns.length));
         }
         meta.visited++;
         meta.log = [...meta.log, { n: meta.visited, url, ok, ms: Date.now() - t0 }].slice(-30);
